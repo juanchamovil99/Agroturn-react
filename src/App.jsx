@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
+import Sidebar from './components/layout/Sidebar';
+import Header from './components/layout/Header';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import CompaniesPage from './pages/companies/CompaniesPage';
+import IssuedInvoicesPage from './pages/invoices/IssuedInvoicesPage';
+import ReceivedInvoicesPage from './pages/invoices/ReceivedInvoicesPage';
+import CustomersPage from './pages/customers/CustomersPage';
+import SuppliersPage from './pages/suppliers/SuppliersPage';
+import BankingPage from './pages/banking/BankingPage';
+import AccountingPage from './pages/accounting/AccountingPage';
+import ReportsPage from './pages/reports/ReportsPage';
+import './styles/global.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <AppProvider>
+      <Router>
+        <div className="app-container">
+          <Sidebar />
+          <div className="main-content">
+            <Header />
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/companies" element={<CompaniesPage />} />
+              <Route path="/issued-invoices" element={<IssuedInvoicesPage />} />
+              <Route path="/received-invoices" element={<ReceivedInvoicesPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/suppliers" element={<SuppliersPage />} />
+              <Route path="/banking" element={<BankingPage />} />
+              <Route path="/accounting" element={<AccountingPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+            </Routes>
+          </div>
+        </div>
+      </Router>
+    </AppProvider>
+  );
 }
 
-export default App
+export default App;
