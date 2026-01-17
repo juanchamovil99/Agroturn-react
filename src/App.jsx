@@ -11,6 +11,7 @@ import SuppliersPage from './pages/suppliers/SuppliersPage';
 import BankingPage from './pages/banking/BankingPage';
 import AccountingPage from './pages/accounting/AccountingPage';
 import ReportsPage from './pages/reports/ReportsPage';
+import AISettingsPage from './pages/settings/AISettingsPage';
 import './styles/global.css';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
               <Route path="/banking" element={<BankingPage />} />
               <Route path="/accounting" element={<AccountingPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/ai-settings" element={<AISettingsPage />} />
             </Routes>
           </div>
         </div>

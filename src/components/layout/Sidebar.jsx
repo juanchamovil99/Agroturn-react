@@ -17,6 +17,7 @@ export default function Sidebar() {
     { path: '/banking', label: 'Banca', icon: '🏦' },
     { path: '/accounting', label: 'Contabilidad', icon: '📒' },
     { path: '/reports', label: 'Informes', icon: '📈' },
+    { path: '/ai-settings', label: 'Asistente IA', icon: '🤖' },
   ];
 
   return (
