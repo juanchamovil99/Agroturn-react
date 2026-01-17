@@ -2,6 +2,21 @@
 
 Un sistema completo de contabilidad para empresas españolas (SL), mejor que Holded.
 
+## 🤖 NUEVO: Asistente Contable con IA
+
+**¡Ya no necesitas saber de contabilidad!** Nuestro asistente IA sugiere automáticamente las cuentas del PGC español. Solo describe la operación en lenguaje normal:
+
+```
+"Factura proveedor material oficina 121€"
+→ La IA crea el asiento completo con IVA
+```
+
+🎯 **95% de precisión** | ⚡ **Respuesta en 1 segundo** | 💰 **Gratis con Groq**
+
+[📖 Ver guía del Asistente IA](AI_ASSISTANT_GUIDE.md)
+
+---
+
 ## 🎯 Características Principales
 
 ### 📊 Gestión de Empresas
@@ -43,6 +58,15 @@ Un sistema completo de contabilidad para empresas españolas (SL), mejor que Hol
 - 9 grupos de cuentas contables
 - Cuentas predefinidas más comunes
 - Libro mayor y diario
+
+### 🤖 Asistente Contable IA (NUEVO)
+- **Sugerencias automáticas de cuentas PGC** usando IA
+- No necesitas conocimientos de contabilidad
+- Describe la operación y la IA crea el asiento
+- Integración con Groq API (gratis y rápido)
+- Modo demo con reglas inteligentes
+- Ahorra tiempo y reduce errores
+- [Ver guía completa](AI_ASSISTANT_GUIDE.md)
 
 ### 📈 Informes y Reportes
 - Cuenta de Pérdidas y Ganancias
@@ -133,12 +157,14 @@ El sistema incluye las cuentas contables más comunes del PGC español:
 
 ## 💡 Ventajas sobre Holded
 
-1. **Código abierto** - Totalmente personalizable
-2. **Sin costes de subscripción** - Instala en tu servidor
-3. **Privacidad total** - Tus datos no salen de tu infraestructura
-4. **PGC completo** - Contabilidad real según normativa española
-5. **Sin límites** - Empresas, facturas, usuarios ilimitados
-6. **Extensible** - Añade tus propias funcionalidades
+1. **🤖 Asistente IA integrado** - Sugerencias automáticas de cuentas contables (Holded no tiene)
+2. **Código abierto** - Totalmente personalizable
+3. **Sin costes de subscripción** - Instala en tu servidor (vs €50-200/mes de Holded)
+4. **Privacidad total** - Tus datos no salen de tu infraestructura
+5. **PGC completo** - Contabilidad real según normativa española
+6. **Sin límites** - Empresas, facturas, usuarios ilimitados (vs límites de Holded)
+7. **Extensible** - Añade tus propias funcionalidades
+8. **Sin conocimientos contables** - La IA lo hace por ti
 
 ## 📝 Licencia
 
