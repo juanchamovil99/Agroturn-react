@@ -9,6 +9,8 @@ export default function PDFScanner({ onClose }) {
   const [extractedData, setExtractedData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [rawText, setRawText] = useState('');
+  const [extractionStats, setExtractionStats] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -67,6 +69,19 @@ export default function PDFScanner({ onClose }) {
 
   // Parse extracted text to find invoice data
   const parseInvoiceData = (text) => {
+    const stats = {
+      foundNumber: false,
+      foundDate: false,
+      foundTaxId: false,
+      foundName: false,
+      foundTotal: false,
+      foundBase: false,
+      foundVAT: false,
+      foundDescription: false,
+      patterns: [],
+      warnings: []
+    };
+
     const data = {
       number: '',
       date: formatDateInput(new Date()),
@@ -80,150 +95,232 @@ export default function PDFScanner({ onClose }) {
       items: []
     };
 
+    console.log('🔍 Iniciando análisis del PDF...');
+    console.log('📝 Longitud del texto:', text.length, 'caracteres');
+    console.log('📄 Primeros 500 caracteres:', text.substring(0, 500));
+
     // Extract invoice number - common patterns
     const invoicePatterns = [
-      /(?:factura|invoice|n[úu]mero|number|nº|no\.?)\s*:?\s*([A-Z0-9\/-]+)/i,
-      /([A-Z]{2,4}[-\/]?\d{4,})/,
-      /\b([0-9]{4,}[-\/][0-9]+)\b/
+      { regex: /(?:factura|invoice|n[úu]mero|number|nº|no\.?)\s*:?\s*([A-Z0-9\/-]{3,20})/i, name: 'Patrón factura con etiqueta' },
+      { regex: /(?:^|\n)\s*([A-Z]{2,4}[-\/]?\d{4,})\s*(?:\n|$)/m, name: 'Patrón código alfanumérico' },
+      { regex: /\b([0-9]{4,}[-\/][0-9]+)\b/, name: 'Patrón numérico con separador' },
+      { regex: /(?:^|\n)\s*FACTURA\s+([A-Z0-9\/-]{3,20})/i, name: 'Factura seguida de número' }
     ];
 
-    for (const pattern of invoicePatterns) {
-      const match = text.match(pattern);
-      if (match) {
+    for (const { regex, name } of invoicePatterns) {
+      const match = text.match(regex);
+      if (match && match[1]) {
         data.number = match[1].trim();
+        stats.foundNumber = true;
+        stats.patterns.push(`✓ Número: ${name}`);
+        console.log('✅ Número de factura encontrado:', data.number, `(${name})`);
         break;
       }
+    }
+    if (!stats.foundNumber) {
+      console.warn('⚠️ No se encontró número de factura');
+      stats.warnings.push('No se detectó número de factura');
     }
 
     // Extract dates (Spanish and international formats)
     const datePatterns = [
-      /(?:fecha|date|emisión|emission)\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
-      /(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})/,
-      /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/
+      { regex: /(?:fecha|date|emisión|emission|emitida)\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i, name: 'Fecha con etiqueta' },
+      { regex: /(?:^|\n)\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})\s*(?:\n|$)/m, name: 'Fecha DD/MM/YYYY' },
+      { regex: /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/, name: 'Fecha ISO' }
     ];
 
-    for (const pattern of datePatterns) {
-      const match = text.match(pattern);
-      if (match) {
+    for (const { regex, name } of datePatterns) {
+      const match = text.match(regex);
+      if (match && match[1]) {
         try {
           const dateStr = match[1];
           let parsedDate;
 
-          if (dateStr.includes('/') || dateStr.includes('-')) {
-            const parts = dateStr.split(/[-\/]/);
-            if (parts[0].length === 4) {
-              // YYYY-MM-DD
-              parsedDate = new Date(parts[0], parts[1] - 1, parts[2]);
-            } else {
-              // DD-MM-YYYY or DD/MM/YYYY
-              parsedDate = new Date(parts[2], parts[1] - 1, parts[0]);
-            }
+          const parts = dateStr.split(/[-\/]/);
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            parsedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+          } else {
+            // DD-MM-YYYY or DD/MM/YYYY
+            parsedDate = new Date(parts[2], parts[1] - 1, parts[0]);
           }
 
-          if (parsedDate && !isNaN(parsedDate.getTime())) {
+          if (parsedDate && !isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 2000) {
             data.date = formatDateInput(parsedDate);
+            stats.foundDate = true;
+            stats.patterns.push(`✓ Fecha: ${name}`);
+            console.log('✅ Fecha encontrada:', data.date, `(${name})`);
             break;
           }
         } catch (e) {
-          console.error('Error parsing date:', e);
+          console.error('❌ Error parseando fecha:', e);
+        }
+      }
+    }
+    if (!stats.foundDate) {
+      console.warn('⚠️ No se encontró fecha, usando fecha actual');
+      stats.warnings.push('Usando fecha actual por defecto');
+    }
+
+    // Extract Spanish NIF/CIF with better validation
+    const cifPatterns = [
+      { regex: /\b([ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J])\b/g, name: 'CIF corporativo' },
+      { regex: /\b(\d{8}[A-Z])\b/g, name: 'NIF/NIE' },
+      { regex: /(?:NIF|CIF|DNI|VAT)\s*:?\s*([A-Z0-9]{8,10})/gi, name: 'NIF/CIF con etiqueta' }
+    ];
+
+    const allCIFs = [];
+    for (const { regex, name } of cifPatterns) {
+      const matches = text.matchAll(regex);
+      for (const match of matches) {
+        const cif = match[1].toUpperCase();
+        if (!allCIFs.includes(cif)) {
+          allCIFs.push(cif);
+          console.log(`✅ NIF/CIF detectado: ${cif} (${name})`);
         }
       }
     }
 
-    // Extract Spanish NIF/CIF
-    const cifPatterns = [
-      /\b([ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J])\b/g,
-      /\b(\d{8}[A-Z])\b/g,
-      /(?:NIF|CIF|DNI)\s*:?\s*([A-Z0-9]{8,9})/gi
-    ];
-
-    const allCIFs = new Set();
-    for (const pattern of cifPatterns) {
-      const matches = text.matchAll(pattern);
-      for (const match of matches) {
-        allCIFs.add(match[1]);
+    if (allCIFs.length > 0) {
+      data.supplierTaxId = allCIFs[0];
+      stats.foundTaxId = true;
+      stats.patterns.push(`✓ NIF/CIF: ${allCIFs.length} encontrado(s)`);
+      if (allCIFs.length > 1) {
+        console.log('ℹ️ Múltiples NIF/CIF encontrados:', allCIFs, '- usando el primero');
       }
+    } else {
+      console.warn('⚠️ No se encontró NIF/CIF');
+      stats.warnings.push('No se detectó NIF/CIF del proveedor');
     }
 
-    // First CIF is usually the supplier
-    if (allCIFs.size > 0) {
-      data.supplierTaxId = Array.from(allCIFs)[0];
-    }
-
-    // Extract company name (usually appears before CIF or at the top)
+    // Extract company name - improved patterns
     const namePatterns = [
-      /([A-ZÑÁÉÍÓÚ][A-ZÑÁÉÍÓÚa-zñáéíóú\s\.]+(?:S\.?L\.?|S\.?A\.?|S\.?L\.?L\.?|C\.?B\.?))/,
-      /^([A-ZÑÁÉÍÓÚ][A-ZÑÁÉÍÓÚa-zñáéíóú\s\.]{3,50})/m
+      { regex: /([A-ZÑÁÉÍÓÚ][A-ZÑÁÉÍÓÚa-zñáéíóú\s&\.]+(?:S\.?L\.?|S\.?A\.?|S\.?L\.?L\.?|C\.?B\.?))/g, name: 'Razón social con forma jurídica' },
+      { regex: /^([A-ZÑÁÉÍÓÚ][A-ZÑÁÉÍÓÚa-zñáéíóú\s&\.]{5,60})$/m, name: 'Nombre en mayúsculas inicio línea' },
+      { regex: /(?:^|\n)\s*([A-ZÑÁÉÍÓÚ][A-ZÑÁÉÍÓÚa-zñáéíóú\s&\.]{10,80})\s*(?:\n|CIF|NIF)/im, name: 'Nombre antes de CIF' }
     ];
 
-    for (const pattern of namePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1].length > 5 && match[1].length < 100) {
-        data.supplierName = match[1].trim();
-        break;
-      }
-    }
-
-    // Extract amounts - look for total, base, IVA
-    const totalPatterns = [
-      /(?:total|TOTAL|Total)\s*:?\s*([\d.,]+)\s*€?/i,
-      /(?:importe total|total amount)\s*:?\s*([\d.,]+)/i
-    ];
-
-    for (const pattern of totalPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        const amount = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
-        if (!isNaN(amount) && amount > 0) {
-          data.total = amount;
+    for (const { regex, name } of namePatterns) {
+      const matches = text.matchAll(regex);
+      for (const match of matches) {
+        const companyName = match[1].trim();
+        // Avoid common false positives
+        if (companyName.length > 5 &&
+            companyName.length < 100 &&
+            !companyName.includes('FACTURA') &&
+            !companyName.includes('TOTAL') &&
+            !companyName.includes('IVA')) {
+          data.supplierName = companyName;
+          stats.foundName = true;
+          stats.patterns.push(`✓ Nombre: ${name}`);
+          console.log('✅ Nombre de empresa encontrado:', data.supplierName, `(${name})`);
           break;
         }
       }
+      if (stats.foundName) break;
+    }
+    if (!stats.foundName) {
+      console.warn('⚠️ No se encontró nombre de empresa');
+      stats.warnings.push('No se detectó nombre del proveedor');
+    }
+
+    // Extract amounts - improved with Spanish number format support
+    const totalPatterns = [
+      { regex: /(?:total|TOTAL|Total|Importe\s+Total)\s*:?\s*([\d\.,]+)\s*€?/gi, name: 'Total' },
+      { regex: /(?:a\s+pagar|pagar)\s*:?\s*([\d\.,]+)\s*€?/gi, name: 'A pagar' }
+    ];
+
+    const allTotals = [];
+    for (const { regex, name } of totalPatterns) {
+      const matches = text.matchAll(regex);
+      for (const match of matches) {
+        const rawAmount = match[1];
+        const amount = parseFloat(rawAmount.replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(amount) && amount > 0 && amount < 1000000) {
+          allTotals.push({ amount, name, raw: rawAmount });
+          console.log(`💰 Total detectado: ${amount}€ (${name}, raw: ${rawAmount})`);
+        }
+      }
+    }
+
+    if (allTotals.length > 0) {
+      // Use the largest amount as total
+      data.total = Math.max(...allTotals.map(t => t.amount));
+      stats.foundTotal = true;
+      stats.patterns.push(`✓ Total: ${allTotals.length} candidato(s)`);
+      console.log('✅ Total seleccionado:', data.total, '€');
+    } else {
+      console.warn('⚠️ No se encontró importe total');
+      stats.warnings.push('No se detectó importe total');
     }
 
     // Extract base imponible
     const basePatterns = [
-      /(?:base\s+imponible|base|subtotal)\s*:?\s*([\d.,]+)\s*€?/i,
-      /(?:neto|net)\s*:?\s*([\d.,]+)/i
+      { regex: /(?:base\s+imponible|base|subtotal)\s*:?\s*([\d\.,]+)\s*€?/gi, name: 'Base imponible' },
+      { regex: /(?:neto|net|base\s+liquidable)\s*:?\s*([\d\.,]+)\s*€?/gi, name: 'Neto' }
     ];
 
-    for (const pattern of basePatterns) {
-      const match = text.match(pattern);
-      if (match) {
+    for (const { regex, name } of basePatterns) {
+      const match = text.match(regex);
+      if (match && match[1]) {
         const amount = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
         if (!isNaN(amount) && amount > 0) {
           data.subtotal = amount;
+          stats.foundBase = true;
+          stats.patterns.push(`✓ Base: ${name}`);
+          console.log('✅ Base imponible encontrada:', data.subtotal, '€', `(${name})`);
           break;
         }
       }
     }
 
-    // Extract IVA
+    // Extract IVA - improved to find multiple rates
     const ivaPatterns = [
-      /(?:IVA|I\.V\.A\.?)\s*(?:21%|10%|4%)?\s*:?\s*([\d.,]+)\s*€?/i,
-      /(?:VAT|tax)\s*:?\s*([\d.,]+)/i
+      { regex: /(?:IVA|I\.V\.A\.?)\s*(?:21%|10%|4%)?\s*:?\s*([\d\.,]+)\s*€?/gi, name: 'IVA con porcentaje' },
+      { regex: /(?:VAT|tax|impuesto)\s*:?\s*([\d\.,]+)\s*€?/gi, name: 'IVA genérico' }
     ];
 
-    for (const pattern of ivaPatterns) {
-      const match = text.match(pattern);
-      if (match) {
+    const allIVAs = [];
+    for (const { regex, name } of ivaPatterns) {
+      const matches = text.matchAll(regex);
+      for (const match of matches) {
         const amount = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
         if (!isNaN(amount) && amount > 0) {
-          data.totalVAT = amount;
-          break;
+          allIVAs.push({ amount, name });
+          console.log(`💰 IVA detectado: ${amount}€ (${name})`);
         }
       }
     }
 
-    // Calculate missing values
+    if (allIVAs.length > 0) {
+      // Sum all IVAs
+      data.totalVAT = allIVAs.reduce((sum, iva) => sum + iva.amount, 0);
+      stats.foundVAT = true;
+      stats.patterns.push(`✓ IVA: ${allIVAs.length} encontrado(s)`);
+      console.log('✅ IVA total:', data.totalVAT, '€');
+    }
+
+    // Calculate missing values and validate
     if (data.total > 0 && data.subtotal === 0 && data.totalVAT === 0) {
       // Assume 21% VAT
-      data.subtotal = data.total / 1.21;
-      data.totalVAT = data.total - data.subtotal;
+      data.subtotal = Math.round((data.total / 1.21) * 100) / 100;
+      data.totalVAT = Math.round((data.total - data.subtotal) * 100) / 100;
+      stats.warnings.push('Base e IVA calculados automáticamente (IVA 21%)');
+      console.log('⚙️ Calculando base e IVA con 21%:', { base: data.subtotal, iva: data.totalVAT });
     } else if (data.subtotal > 0 && data.total === 0) {
-      data.total = data.subtotal + data.totalVAT;
+      data.total = Math.round((data.subtotal + data.totalVAT) * 100) / 100;
+      console.log('⚙️ Calculando total:', data.total, '€');
     } else if (data.total > 0 && data.subtotal > 0 && data.totalVAT === 0) {
-      data.totalVAT = data.total - data.subtotal;
+      data.totalVAT = Math.round((data.total - data.subtotal) * 100) / 100;
+      console.log('⚙️ Calculando IVA:', data.totalVAT, '€');
+    }
+
+    // Validate amounts
+    const calculatedTotal = Math.round((data.subtotal + data.totalVAT) * 100) / 100;
+    const totalDiff = Math.abs(data.total - calculatedTotal);
+    if (totalDiff > 0.10 && data.total > 0 && data.subtotal > 0) {
+      stats.warnings.push(`⚠️ Inconsistencia: Base (${data.subtotal}€) + IVA (${data.totalVAT}€) ≠ Total (${data.total}€)`);
+      console.warn('⚠️ Los importes no cuadran:', { base: data.subtotal, iva: data.totalVAT, total: data.total, diff: totalDiff });
     }
 
     // Create a default item
@@ -236,28 +333,55 @@ export default function PDFScanner({ onClose }) {
       }];
     }
 
-    // Extract description (first few words or service description)
+    // Extract description
     const descPatterns = [
-      /(?:concepto|descripción|description)\s*:?\s*([^\n]{10,100})/i,
-      /(?:servicios?|productos?)\s+([^\n]{10,100})/i
+      { regex: /(?:concepto|descripción|description|objeto)\s*:?\s*([^\n]{10,150})/i, name: 'Concepto con etiqueta' },
+      { regex: /(?:servicios?|productos?|obra)\s+([^\n]{10,150})/i, name: 'Servicios/productos' }
     ];
 
-    for (const pattern of descPatterns) {
-      const match = text.match(pattern);
-      if (match) {
+    for (const { regex, name } of descPatterns) {
+      const match = text.match(regex);
+      if (match && match[1]) {
         data.description = match[1].trim().substring(0, 200);
+        stats.foundDescription = true;
+        stats.patterns.push(`✓ Descripción: ${name}`);
+        console.log('✅ Descripción encontrada:', data.description.substring(0, 50) + '...', `(${name})`);
         break;
       }
     }
 
     // If no description found, use first meaningful line
     if (!data.description && text.length > 20) {
-      const lines = text.split('\n').filter(line => line.trim().length > 10);
+      const lines = text.split('\n').filter(line =>
+        line.trim().length > 15 &&
+        !line.includes('FACTURA') &&
+        !line.includes('CIF') &&
+        !line.includes('€')
+      );
       if (lines.length > 0) {
         data.description = lines[0].substring(0, 100);
+        stats.foundDescription = true;
+        console.log('ℹ️ Usando primera línea como descripción:', data.description);
       }
     }
 
+    // Generate extraction report
+    const foundFields = [
+      stats.foundNumber,
+      stats.foundDate,
+      stats.foundTaxId,
+      stats.foundName,
+      stats.foundTotal || stats.foundBase
+    ].filter(Boolean).length;
+
+    stats.successRate = Math.round((foundFields / 5) * 100);
+    console.log(`\n📊 Resumen de extracción: ${foundFields}/5 campos (${stats.successRate}%)`);
+    console.log('✓ Patrones aplicados:', stats.patterns);
+    if (stats.warnings.length > 0) {
+      console.log('⚠️ Advertencias:', stats.warnings);
+    }
+
+    setExtractionStats(stats);
     return data;
   };
 
@@ -265,10 +389,21 @@ export default function PDFScanner({ onClose }) {
     if (!pdfFile) return;
 
     setIsProcessing(true);
+    setError(null);
+    setExtractedData(null);
+    setExtractionStats(null);
 
     try {
+      console.log('🚀 Iniciando procesamiento de:', pdfFile.name);
+
       // Extract text from PDF
       const text = await extractTextFromPDF(pdfFile);
+      console.log('✅ Texto extraído exitosamente');
+
+      if (!text || text.trim().length < 50) {
+        throw new Error('El PDF parece estar vacío o contiene muy poco texto. Puede ser una imagen escaneada sin OCR.');
+      }
+
       setRawText(text);
 
       // Parse the text to extract invoice data
@@ -276,10 +411,23 @@ export default function PDFScanner({ onClose }) {
 
       setExtractedData(parsedData);
       setIsProcessing(false);
+
+      // Show success message with stats
+      console.log('✅ Procesamiento completado');
     } catch (error) {
-      console.error('Error processing PDF:', error);
-      alert('Error al procesar el PDF. Por favor, intenta con otro archivo o introduce los datos manualmente.');
+      console.error('❌ Error processing PDF:', error);
+      setError(error.message || 'Error desconocido al procesar el PDF');
       setIsProcessing(false);
+
+      // More user-friendly error messages
+      let errorMsg = 'Error al procesar el PDF.';
+      if (error.message.includes('vacío')) {
+        errorMsg = 'El PDF no contiene texto legible. Puede ser una imagen escaneada.';
+      } else if (error.message.includes('worker')) {
+        errorMsg = 'Error al cargar el procesador de PDF. Verifica tu conexión a internet.';
+      }
+
+      alert(errorMsg + '\nPor favor, revisa la consola (F12) para más detalles o introduce los datos manualmente.');
     }
   };
 
@@ -345,38 +493,62 @@ export default function PDFScanner({ onClose }) {
                 )}
               </div>
 
+              {error && (
+                <div className="card mb-3" style={{ background: '#ffebee', borderLeft: '4px solid #f44336' }}>
+                  <h4 style={{ fontSize: '14px', marginBottom: '8px', color: '#c62828' }}>❌ Error en el Procesamiento</h4>
+                  <p style={{ fontSize: '13px', margin: 0, color: '#c62828' }}>{error}</p>
+                  <p style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>
+                    💡 Tip: Abre la consola del navegador (F12) para ver logs detallados del análisis.
+                  </p>
+                  <button
+                    className="btn btn-outline mt-2"
+                    onClick={handleScanPDF}
+                    disabled={isProcessing}
+                    style={{ fontSize: '13px' }}
+                  >
+                    🔄 Intentar de nuevo
+                  </button>
+                </div>
+              )}
+
               <div className="card" style={{ background: '#e3f2fd', borderLeft: '4px solid #2196F3' }}>
-                <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>🤖 OCR Real Implementado</h4>
+                <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>🤖 OCR Real con Análisis Inteligente</h4>
                 <p style={{ fontSize: '13px', margin: 0, color: 'var(--text-secondary)' }}>
-                  Esta versión utiliza <strong>PDF.js</strong> para extraer texto real del PDF y algoritmos
-                  inteligentes para detectar:
+                  Sistema avanzado con <strong>PDF.js</strong> y análisis de patrones múltiples:
                 </p>
                 <ul style={{ fontSize: '13px', marginTop: '8px', color: 'var(--text-secondary)' }}>
-                  <li>Número de factura (varios formatos)</li>
-                  <li>Fecha de emisión (DD/MM/YYYY, YYYY-MM-DD)</li>
-                  <li>NIF/CIF del proveedor (validación española)</li>
-                  <li>Nombre de la empresa</li>
-                  <li>Base imponible, IVA y Total</li>
-                  <li>Descripción de servicios/productos</li>
+                  <li><strong>Detección multi-patrón:</strong> 4+ formatos de números de factura</li>
+                  <li><strong>Fechas inteligentes:</strong> DD/MM/YYYY, YYYY-MM-DD, ISO</li>
+                  <li><strong>Validación NIF/CIF:</strong> Detecta múltiples identificadores fiscales</li>
+                  <li><strong>Reconocimiento de razones sociales:</strong> Incluye formas jurídicas (SL, SA)</li>
+                  <li><strong>Cálculo automático:</strong> Si falta base o IVA, se calcula automáticamente</li>
+                  <li><strong>Estadísticas detalladas:</strong> Muestra qué se encontró y qué no</li>
+                  <li><strong>Logs de depuración:</strong> Abre F12 para ver análisis completo</li>
                 </ul>
               </div>
 
               {rawText && (
-                <div className="card mt-3" style={{ background: '#f5f5f5' }}>
-                  <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>📝 Texto Extraído</h4>
+                <details className="card mt-3" style={{ background: '#f5f5f5', cursor: 'pointer' }} open={error ? true : false}>
+                  <summary style={{ padding: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                    📝 Texto Extraído del PDF ({rawText.length} caracteres) - Click para {error ? 'ver' : 'expandir'}
+                  </summary>
                   <div style={{
-                    maxHeight: '200px',
+                    maxHeight: '300px',
                     overflowY: 'auto',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontFamily: 'monospace',
                     whiteSpace: 'pre-wrap',
-                    padding: '8px',
+                    padding: '12px',
                     background: 'white',
-                    border: '1px solid var(--border-color)'
+                    border: '1px solid var(--border-color)',
+                    marginTop: '8px'
                   }}>
                     {rawText}
                   </div>
-                </div>
+                  <p style={{ fontSize: '11px', color: '#666', marginTop: '8px', marginBottom: '4px' }}>
+                    💡 Este es el texto que el sistema intentó analizar. Úsalo para entender qué detectó PDF.js.
+                  </p>
+                </details>
               )}
             </div>
           ) : (
@@ -388,6 +560,60 @@ export default function PDFScanner({ onClose }) {
                   extraído la información automáticamente.
                 </p>
               </div>
+
+              {/* Extraction Statistics */}
+              {extractionStats && (
+                <div className="card mb-3" style={{
+                  background: extractionStats.successRate >= 60 ? '#e8f5e9' : '#fff3e0',
+                  borderLeft: `4px solid ${extractionStats.successRate >= 60 ? '#4caf50' : '#ff9800'}`
+                }}>
+                  <h4 style={{ fontSize: '14px', marginBottom: '12px' }}>
+                    📊 Estadísticas de Extracción ({extractionStats.successRate}%)
+                  </h4>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '12px' }}>
+                      {extractionStats.foundNumber ? '✅' : '❌'} Número de factura
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      {extractionStats.foundDate ? '✅' : '⚠️'} Fecha
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      {extractionStats.foundTaxId ? '✅' : '❌'} NIF/CIF
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      {extractionStats.foundName ? '✅' : '❌'} Nombre proveedor
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      {extractionStats.foundTotal || extractionStats.foundBase ? '✅' : '❌'} Importes
+                    </div>
+                  </div>
+
+                  {extractionStats.patterns.length > 0 && (
+                    <details style={{ fontSize: '12px', marginTop: '8px' }}>
+                      <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '4px' }}>
+                        🔍 Patrones detectados ({extractionStats.patterns.length})
+                      </summary>
+                      <ul style={{ marginLeft: '20px', marginTop: '4px' }}>
+                        {extractionStats.patterns.map((pattern, idx) => (
+                          <li key={idx} style={{ color: '#666' }}>{pattern}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  {extractionStats.warnings.length > 0 && (
+                    <div style={{ marginTop: '12px', padding: '8px', background: '#fff3cd', borderRadius: '4px' }}>
+                      <strong style={{ fontSize: '12px', color: '#856404' }}>⚠️ Advertencias:</strong>
+                      <ul style={{ marginLeft: '20px', marginTop: '4px', marginBottom: 0 }}>
+                        {extractionStats.warnings.map((warning, idx) => (
+                          <li key={idx} style={{ fontSize: '12px', color: '#856404' }}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="form-row">
                 <div className="form-group">
