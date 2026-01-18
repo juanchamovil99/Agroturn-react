@@ -1,0 +1,265 @@
+.preview-modal {
+  max-width: 900px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.invoice-preview {
+  padding: 3rem;
+  background: white;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Invoice Header */
+.invoice-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 3px solid #667eea;
+}
+
+.company-info .company-name {
+  margin: 0 0 1rem 0;
+  color: #667eea;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.company-info p {
+  margin: 0.25rem 0;
+  color: #4a5568;
+  font-size: 0.875rem;
+}
+
+.invoice-info {
+  text-align: right;
+}
+
+.invoice-title {
+  margin: 0 0 1.5rem 0;
+  color: #2d3748;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.invoice-details {
+  display: inline-block;
+  text-align: left;
+}
+
+.detail-item {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #718096;
+  min-width: 100px;
+}
+
+.detail-value {
+  color: #2d3748;
+  font-weight: 500;
+}
+
+/* Client Section */
+.client-section {
+  background: #f7fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.client-section h3 {
+  margin: 0 0 1rem 0;
+  color: #667eea;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.client-details p {
+  margin: 0.25rem 0;
+  color: #2d3748;
+}
+
+.client-name {
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Items Table */
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+.items-table thead {
+  background: #667eea;
+  color: white;
+}
+
+.items-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.items-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #2d3748;
+}
+
+.items-table tbody tr:nth-child(even) {
+  background: #f7fafc;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Totals */
+.totals-section-preview {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+}
+
+.totals-grid-preview {
+  min-width: 350px;
+  background: #f7fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.total-row-preview {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  color: #2d3748;
+}
+
+.total-row-preview.final {
+  border-bottom: none;
+  border-top: 3px solid #667eea;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.total-row-preview .negative {
+  color: #f56565;
+}
+
+/* Payment and Notes */
+.payment-section,
+.notes-section {
+  margin-bottom: 2rem;
+}
+
+.payment-section h4,
+.notes-section h4 {
+  margin: 0 0 0.75rem 0;
+  color: #667eea;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-section p,
+.notes-section p {
+  margin: 0.5rem 0;
+  color: #2d3748;
+}
+
+/* Footer */
+.invoice-footer {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.footer-text {
+  color: #718096;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .modal-overlay {
+    background: none;
+    position: static;
+  }
+
+  .modal-content {
+    box-shadow: none;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .invoice-preview {
+    padding: 0;
+  }
+
+  .invoice-header {
+    page-break-after: avoid;
+  }
+
+  .items-table {
+    page-break-inside: auto;
+  }
+
+  .items-table tr {
+    page-break-inside: avoid;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .invoice-header {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-info {
+    text-align: left;
+  }
+
+  .invoice-title {
+    font-size: 2rem;
+  }
+
+  .invoice-preview {
+    padding: 1.5rem;
+  }
+
+  .totals-grid-preview {
+    min-width: 100%;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+}

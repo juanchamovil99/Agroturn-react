@@ -1,0 +1,169 @@
+.accounting-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.info-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.info-banner h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+}
+
+.info-banner p {
+  margin: 0;
+  opacity: 0.95;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.accounting-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.section-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.section-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.section-card h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.section-card p {
+  color: #718096;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.chart-of-accounts {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.chart-of-accounts > h2 {
+  margin: 0 0 2rem 0;
+  color: #2d3748;
+  font-size: 1.75rem;
+}
+
+.account-group {
+  margin-bottom: 2rem;
+}
+
+.group-header {
+  margin: 0 0 1rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  font-size: 1.125rem;
+}
+
+.accounts-table-container {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.accounts-table thead {
+  background: #f7fafc;
+}
+
+.accounts-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  color: #4a5568;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.accounts-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.accounts-table tbody tr:hover {
+  background: #f7fafc;
+}
+
+.account-code {
+  font-weight: 700;
+  color: #667eea;
+  font-family: monospace;
+}
+
+.account-name {
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.account-category {
+  color: #718096;
+  font-size: 0.875rem;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-debit {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.type-credit {
+  background: #bee3f8;
+  color: #2c5282;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .accounting-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .accounts-table {
+    font-size: 0.875rem;
+  }
+
+  .accounts-table th,
+  .accounts-table td {
+    padding: 0.5rem;
+  }
+}

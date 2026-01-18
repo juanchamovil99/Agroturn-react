@@ -1,35 +1,30 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout';
+import Dashboard from './pages/dashboard/Dashboard';
+import Companies from './pages/companies/Companies';
+import IssuedInvoices from './pages/invoices/IssuedInvoices';
+import ReceivedInvoices from './pages/invoices/ReceivedInvoices';
+import Banking from './pages/banking/Banking';
+import Accounting from './pages/accounting/Accounting';
+import Reports from './pages/reports/Reports';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="companies" element={<Companies />} />
+          <Route path="invoices/issued" element={<IssuedInvoices />} />
+          <Route path="invoices/received" element={<ReceivedInvoices />} />
+          <Route path="banking" element={<Banking />} />
+          <Route path="accounting" element={<Accounting />} />
+          <Route path="reports" element={<Reports />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

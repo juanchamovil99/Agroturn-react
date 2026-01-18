@@ -1,0 +1,118 @@
+.banking-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.info-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.info-box h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+}
+
+.info-box p {
+  margin: 0.5rem 0;
+  opacity: 0.95;
+  font-size: 0.875rem;
+}
+
+.info-box strong {
+  font-weight: 600;
+}
+
+.transactions-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.transactions-container h2 {
+  margin: 0 0 1.5rem 0;
+  color: #2d3748;
+  font-size: 1.5rem;
+}
+
+.transactions-table-container {
+  overflow-x: auto;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transactions-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.transactions-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transactions-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.transactions-table tbody tr:hover {
+  background: #f7fafc;
+}
+
+.concept-cell {
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount-cell {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.amount-cell.positive {
+  color: #48bb78;
+}
+
+.amount-cell.negative {
+  color: #f56565;
+}
+
+.status-reconciled {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status-pending {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.file-upload-container {
+  position: relative;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .transactions-table {
+    min-width: 600px;
+  }
+
+  .concept-cell {
+    max-width: 200px;
+  }
+}

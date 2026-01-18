@@ -1,0 +1,138 @@
+.modal-content.large {
+  max-width: 1200px;
+}
+
+.invoice-form {
+  padding: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Items Container */
+.items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.item-row {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f7fafc;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  position: relative;
+}
+
+.item-number {
+  width: 32px;
+  height: 32px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.item-fields {
+  flex: 1;
+}
+
+.btn-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #fed7d7;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-remove:hover {
+  background: #fc8181;
+}
+
+/* Totals Section */
+.totals-section {
+  background: #f7fafc;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid #667eea;
+}
+
+.totals-grid {
+  max-width: 400px;
+  margin-left: auto;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.total-row.final {
+  border-bottom: none;
+  border-top: 3px solid #667eea;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+}
+
+.total-label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.total-value {
+  font-weight: 700;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.total-value.negative {
+  color: #f56565;
+}
+
+.total-row.final .total-label,
+.total-row.final .total-value {
+  font-size: 1.25rem;
+  color: #667eea;
+}
+
+.total-input {
+  background: #edf2f7 !important;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .item-row {
+    flex-direction: column;
+  }
+
+  .item-number {
+    align-self: flex-start;
+  }
+
+  .btn-remove {
+    top: 1rem;
+    right: 1rem;
+  }
+}
