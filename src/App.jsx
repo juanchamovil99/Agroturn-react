@@ -7,10 +7,11 @@ import ReceivedInvoices from './pages/invoices/ReceivedInvoices';
 import Banking from './pages/banking/Banking';
 import Accounting from './pages/accounting/Accounting';
 import Reports from './pages/reports/Reports';
-import Settings from './pages/settings/Settings';
+import SettingsTest from './pages/settings/SettingsTest';
 import './App.css';
 
 function App() {
+  // Application routes
   return (
     <Router>
       <Routes>
@@ -22,8 +23,7 @@ function App() {
           <Route path="banking" element={<Banking />} />
           <Route path="accounting" element={<Accounting />} />
           <Route path="reports" element={<Reports />} />
-          {/* Settings configuration page */}
-          <Route path="settings" element={<Settings />} />
+          <Route path="settings" element={<SettingsTest />} />
         </Route>
       </Routes>
     </Router>
