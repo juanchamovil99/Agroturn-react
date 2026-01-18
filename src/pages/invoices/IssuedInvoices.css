@@ -270,6 +270,54 @@
   color: #718096;
 }
 
+/* Upload Section */
+.upload-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border: 2px dashed #667eea;
+}
+
+.upload-section h3 {
+  margin: 0 0 0.75rem 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.upload-section p {
+  margin: 0 0 1.5rem 0;
+  color: #4a5568;
+  font-size: 1rem;
+}
+
+.file-input {
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-input:hover:not(:disabled) {
+  border-color: #667eea;
+}
+
+.file-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background: #fed7d7;
+  border-radius: 8px;
+  border-left: 4px solid #f56565;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .invoices-table-container {
@@ -294,5 +342,9 @@
 
   .filters {
     flex-direction: column;
+  }
+
+  .upload-section {
+    padding: 1.5rem;
   }
 }

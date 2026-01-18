@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import useStore from '../../store/useStore';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { extractInvoiceDataFromPDF, isPDFScanned } from '../../utils/pdfParser';
 import './IssuedInvoices.css';
 
 const ReceivedInvoices = () => {
@@ -14,6 +15,8 @@ const ReceivedInvoices = () => {
   } = useStore();
 
   const [showUpload, setShowUpload] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [extractionError, setExtractionError] = useState(null);
 
   const companyInvoices = useMemo(() => {
     if (!selectedCompany) return [];
@@ -26,30 +29,87 @@ const ReceivedInvoices = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Simulate PDF scanning (would use a real OCR library in production)
-    alert(
-      'Escaneando PDF... Esta funcionalidad extraería automáticamente:\n- Proveedor\n- Número de factura\n- Fecha\n- Importes\n- IVA\n\nPor ahora, añade los datos manualmente.'
-    );
+    // Check if it's a PDF
+    if (file.type !== 'application/pdf') {
+      alert('Por favor, selecciona un archivo PDF válido.');
+      return;
+    }
 
-    // For now, create a blank invoice
-    const newInvoice = {
-      id: `rec_${Date.now()}`,
-      companyId: selectedCompany.id,
-      number: '',
-      date: new Date().toISOString().split('T')[0],
-      supplier: {
-        name: '',
-        nif: '',
-      },
-      subtotal: 0,
-      vat: 0,
-      total: 0,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
+    setIsProcessing(true);
+    setExtractionError(null);
 
-    addReceivedInvoice(newInvoice);
-    setShowUpload(false);
+    try {
+      // Check if PDF is scanned (image-based)
+      const isScanned = await isPDFScanned(file);
+
+      if (isScanned) {
+        alert(
+          '⚠️ PDF Escaneado Detectado\n\n' +
+          'Este PDF parece ser una imagen escaneada y no contiene texto extraíble.\n\n' +
+          'Para estos casos necesitarías:\n' +
+          '- OCR (Reconocimiento Óptico de Caracteres)\n' +
+          '- O introducir los datos manualmente\n\n' +
+          'Por ahora, usa "Añadir Manual"'
+        );
+        setIsProcessing(false);
+        setShowUpload(false);
+        return;
+      }
+
+      // Extract invoice data from PDF
+      const extractedData = await extractInvoiceDataFromPDF(file);
+
+      // Create invoice with extracted data
+      const newInvoice = {
+        id: `rec_${Date.now()}`,
+        companyId: selectedCompany.id,
+        number: extractedData.number || `AUTO-${Date.now()}`,
+        date: extractedData.date || new Date().toISOString().split('T')[0],
+        supplier: {
+          name: extractedData.supplier.name || 'Sin nombre',
+          nif: extractedData.supplier.nif || '',
+          address: extractedData.supplier.address || '',
+          city: extractedData.supplier.city || '',
+          postalCode: extractedData.supplier.postalCode || '',
+        },
+        subtotal: extractedData.subtotal || 0,
+        vat: extractedData.vat || 0,
+        total: extractedData.total || 0,
+        vatRate: extractedData.vatRate || 0.21,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        pdfFileName: file.name,
+      };
+
+      addReceivedInvoice(newInvoice);
+
+      // Show success message with extracted data
+      alert(
+        '✅ Factura Extraída Exitosamente\n\n' +
+        `Número: ${newInvoice.number}\n` +
+        `Proveedor: ${newInvoice.supplier.name}\n` +
+        `NIF: ${newInvoice.supplier.nif || 'No detectado'}\n` +
+        `Fecha: ${formatDate(newInvoice.date)}\n` +
+        `Base: ${formatCurrency(newInvoice.subtotal)}\n` +
+        `IVA: ${formatCurrency(newInvoice.vat)}\n` +
+        `Total: ${formatCurrency(newInvoice.total)}\n\n` +
+        'Puedes editar los datos si es necesario.'
+      );
+
+      setShowUpload(false);
+    } catch (error) {
+      console.error('Error extracting PDF:', error);
+      setExtractionError(error.message);
+      alert(
+        '❌ Error al Extraer Datos\n\n' +
+        error.message + '\n\n' +
+        'Por favor, intenta con otro PDF o usa "Añadir Manual".'
+      );
+    } finally {
+      setIsProcessing(false);
+      // Reset file input
+      e.target.value = '';
+    }
   };
 
   const handleManualAdd = () => {
@@ -129,17 +189,41 @@ const ReceivedInvoices = () => {
 
       {showUpload && (
         <div className="upload-section">
-          <h3>Cargar Factura PDF</h3>
-          <p>Sube un PDF y el sistema extraerá automáticamente los datos</p>
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileUpload}
-            className="file-input"
-          />
-          <button className="btn btn-secondary" onClick={() => setShowUpload(false)}>
-            Cancelar
-          </button>
+          <h3>📄 Cargar Factura PDF</h3>
+          <p>
+            {isProcessing
+              ? '⏳ Extrayendo datos del PDF...'
+              : 'Sube un PDF y el sistema extraerá automáticamente: Proveedor, NIF, Fecha, Importes e IVA'}
+          </p>
+          {extractionError && (
+            <div className="error-message" style={{ color: '#f56565', marginBottom: '1rem' }}>
+              ❌ {extractionError}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              className="file-input"
+              disabled={isProcessing}
+              style={{ flex: 1 }}
+            />
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setShowUpload(false);
+                setExtractionError(null);
+              }}
+              disabled={isProcessing}
+            >
+              Cancelar
+            </button>
+          </div>
+          <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#718096' }}>
+            <strong>Nota:</strong> Funciona mejor con PDFs que contienen texto (no imágenes escaneadas).
+            Para PDFs escaneados, se requiere OCR avanzado.
+          </div>
         </div>
       )}
 
