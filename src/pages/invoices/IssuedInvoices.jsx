@@ -5,6 +5,7 @@ import InvoiceForm from '../../components/invoices/InvoiceForm';
 import InvoicePreview from '../../components/invoices/InvoicePreview';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { generateAccountingEntry } from '../../services/accountingAI';
+import { generateSmartAccountingEntry, isAIConfigured } from '../../services/smartAccountingAI';
 import './IssuedInvoices.css';
 
 const IssuedInvoices = () => {
@@ -131,7 +132,7 @@ const IssuedInvoices = () => {
           company={selectedCompany}
           type="issued"
           onClose={handleCloseForm}
-          onSave={(invoice) => {
+          onSave={async (invoice) => {
             const fullInvoice = {
               ...invoice,
               companyId: selectedCompany.id,
@@ -144,21 +145,55 @@ const IssuedInvoices = () => {
               addIssuedInvoice(fullInvoice);
 
               // Generate accounting entry automatically for new invoices
-              const { entry, suggestion } = generateAccountingEntry(fullInvoice, 'income');
-              entry.companyId = selectedCompany.id;
-              addAccountingEntry(entry);
+              const useSmartAI = isAIConfigured();
+              let entry, suggestion;
 
-              // Show notification about accounting
-              setTimeout(() => {
-                alert(
-                  `✅ Factura Creada\n\n` +
-                  `🤖 Contabilización Automática:\n` +
-                  `Categoría: ${suggestion.categoryName}\n` +
-                  `Debe (${suggestion.debitAccount}): ${suggestion.debitAccountName}\n` +
-                  `Haber (${suggestion.creditAccount}): ${suggestion.creditAccountName}\n\n` +
-                  `El asiento contable se ha generado automáticamente.`
-                );
-              }, 300);
+              try {
+                if (useSmartAI) {
+                  // Use smart AI with Google Gemini
+                  const result = await generateSmartAccountingEntry(fullInvoice, 'income');
+                  entry = result.entry;
+                  suggestion = result.suggestion;
+                } else {
+                  // Use basic rule-based AI
+                  const result = generateAccountingEntry(fullInvoice, 'income');
+                  entry = result.entry;
+                  suggestion = result.suggestion;
+                }
+
+                entry.companyId = selectedCompany.id;
+                addAccountingEntry(entry);
+
+                // Show notification about accounting
+                setTimeout(() => {
+                  let message = `✅ Factura Creada\n\n` +
+                    `🤖 Contabilización ${useSmartAI ? 'Inteligente' : 'Automática'}:\n` +
+                    `Categoría: ${suggestion.categoryName || suggestion.category}\n` +
+                    `Debe (${suggestion.debitAccount}): ${suggestion.debitAccountName}\n` +
+                    `Haber (${suggestion.creditAccount}): ${suggestion.creditAccountName}\n`;
+
+                  if (suggestion.isAsset) {
+                    message += `\n🏭 ACTIVO DETECTADO:\n` +
+                      `Tipo: ${suggestion.assetType}\n` +
+                      `Amortización: ${suggestion.depreciationYears} años\n` +
+                      `Anual: ${formatCurrency(suggestion.depreciationAnnual || 0)}\n`;
+                  }
+
+                  if (suggestion.explanation) {
+                    message += `\n💡 ${suggestion.explanation}`;
+                  }
+
+                  if (suggestion.usingFallback) {
+                    message += `\n\n⚠️ Usando IA básica. Configura Google Gemini en Ajustes para IA inteligente.`;
+                  }
+
+                  message += `\n\nEl asiento contable se ha generado automáticamente.`;
+                  alert(message);
+                }, 300);
+              } catch (error) {
+                console.error('Error generating accounting:', error);
+                alert(`⚠️ Error al generar contabilidad: ${error.message}\n\nLa factura se ha creado pero sin asiento contable.`);
+              }
             }
             handleCloseForm();
           }}

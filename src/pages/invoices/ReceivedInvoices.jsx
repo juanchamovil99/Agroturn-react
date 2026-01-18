@@ -4,6 +4,7 @@ import useStore from '../../store/useStore';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { extractInvoiceDataFromPDF, isPDFScanned } from '../../utils/pdfParser';
 import { generateAccountingEntry } from '../../services/accountingAI';
+import { generateSmartAccountingEntry, isAIConfigured } from '../../services/smartAccountingAI';
 import './IssuedInvoices.css';
 
 const ReceivedInvoices = () => {
@@ -86,26 +87,62 @@ const ReceivedInvoices = () => {
       addReceivedInvoice(newInvoice);
 
       // Generate accounting entry automatically
-      const { entry, suggestion } = generateAccountingEntry(newInvoice, 'expense');
-      entry.companyId = selectedCompany.id; // Add company ID
-      addAccountingEntry(entry);
+      const useSmartAI = isAIConfigured();
+      let entry, suggestion;
 
-      // Show success message with extracted data AND accounting
-      alert(
-        '✅ Factura Extraída Exitosamente\n\n' +
-        `Número: ${newInvoice.number}\n` +
-        `Proveedor: ${newInvoice.supplier.name}\n` +
-        `NIF: ${newInvoice.supplier.nif || 'No detectado'}\n` +
-        `Fecha: ${formatDate(newInvoice.date)}\n` +
-        `Base: ${formatCurrency(newInvoice.subtotal)}\n` +
-        `IVA: ${formatCurrency(newInvoice.vat)}\n` +
-        `Total: ${formatCurrency(newInvoice.total)}\n\n` +
-        `🤖 Contabilización Automática:\n` +
-        `Categoría: ${suggestion.categoryName}\n` +
-        `Debe (${suggestion.debitAccount}): ${suggestion.debitAccountName}\n` +
-        `Haber (${suggestion.creditAccount}): ${suggestion.creditAccountName}\n\n` +
-        'Puedes editar los datos si es necesario.'
-      );
+      try {
+        if (useSmartAI) {
+          const result = await generateSmartAccountingEntry(newInvoice, 'expense');
+          entry = result.entry;
+          suggestion = result.suggestion;
+        } else {
+          const result = generateAccountingEntry(newInvoice, 'expense');
+          entry = result.entry;
+          suggestion = result.suggestion;
+        }
+
+        entry.companyId = selectedCompany.id;
+        addAccountingEntry(entry);
+
+        // Show success message with extracted data AND accounting
+        let message = '✅ Factura Extraída Exitosamente\n\n' +
+          `Número: ${newInvoice.number}\n` +
+          `Proveedor: ${newInvoice.supplier.name}\n` +
+          `NIF: ${newInvoice.supplier.nif || 'No detectado'}\n` +
+          `Fecha: ${formatDate(newInvoice.date)}\n` +
+          `Base: ${formatCurrency(newInvoice.subtotal)}\n` +
+          `IVA: ${formatCurrency(newInvoice.vat)}\n` +
+          `Total: ${formatCurrency(newInvoice.total)}\n\n` +
+          `🤖 Contabilización ${useSmartAI ? 'Inteligente' : 'Automática'}:\n` +
+          `Categoría: ${suggestion.categoryName || suggestion.category}\n` +
+          `Debe (${suggestion.debitAccount}): ${suggestion.debitAccountName}\n` +
+          `Haber (${suggestion.creditAccount}): ${suggestion.creditAccountName}\n`;
+
+        if (suggestion.isAsset) {
+          message += `\n🏭 ACTIVO DETECTADO:\n` +
+            `Tipo: ${suggestion.assetType}\n` +
+            `Amortización: ${suggestion.depreciationYears} años\n` +
+            `Anual: ${formatCurrency(suggestion.depreciationAnnual || 0)}\n`;
+        }
+
+        if (suggestion.explanation) {
+          message += `\n💡 ${suggestion.explanation}`;
+        }
+
+        if (suggestion.usingFallback) {
+          message += `\n\n⚠️ Usando IA básica.`;
+        }
+
+        message += '\n\nPuedes editar los datos si es necesario.';
+        alert(message);
+      } catch (accError) {
+        console.error('Accounting error:', accError);
+        alert(
+          '✅ Factura Extraída (sin contabilidad)\n\n' +
+          `Error al generar asiento: ${accError.message}\n\n` +
+          'La factura se ha guardado correctamente.'
+        );
+      }
 
       setShowUpload(false);
     } catch (error) {
@@ -123,7 +160,7 @@ const ReceivedInvoices = () => {
     }
   };
 
-  const handleManualAdd = () => {
+  const handleManualAdd = async () => {
     const supplierName = prompt('Nombre del proveedor:') || '';
     const description = prompt('Descripción/Concepto:') || supplierName;
 
@@ -148,18 +185,45 @@ const ReceivedInvoices = () => {
     addReceivedInvoice(newInvoice);
 
     // Generate accounting entry automatically
-    const { entry, suggestion } = generateAccountingEntry(newInvoice, 'expense');
-    entry.companyId = selectedCompany.id;
-    addAccountingEntry(entry);
+    const useSmartAI = isAIConfigured();
+    let entry, suggestion;
 
-    // Show accounting categorization
-    alert(
-      `✅ Factura Añadida\n\n` +
-      `🤖 Contabilización Automática:\n` +
-      `Categoría: ${suggestion.categoryName}\n` +
-      `Confianza: ${(suggestion.confidence * 100).toFixed(0)}%\n\n` +
-      `Asiento generado automáticamente.`
-    );
+    try {
+      if (useSmartAI) {
+        const result = await generateSmartAccountingEntry(newInvoice, 'expense');
+        entry = result.entry;
+        suggestion = result.suggestion;
+      } else {
+        const result = generateAccountingEntry(newInvoice, 'expense');
+        entry = result.entry;
+        suggestion = result.suggestion;
+      }
+
+      entry.companyId = selectedCompany.id;
+      addAccountingEntry(entry);
+
+      // Show accounting categorization
+      let message = `✅ Factura Añadida\n\n` +
+        `🤖 Contabilización ${useSmartAI ? 'Inteligente' : 'Automática'}:\n` +
+        `Categoría: ${suggestion.categoryName || suggestion.category}\n` +
+        `Confianza: ${(suggestion.confidence * 100).toFixed(0)}%\n`;
+
+      if (suggestion.isAsset) {
+        message += `\n🏭 ACTIVO DETECTADO:\n` +
+          `Tipo: ${suggestion.assetType}\n` +
+          `Amortización: ${suggestion.depreciationYears} años\n`;
+      }
+
+      if (suggestion.explanation) {
+        message += `\n💡 ${suggestion.explanation}`;
+      }
+
+      message += `\n\nAsiento generado automáticamente.`;
+      alert(message);
+    } catch (error) {
+      console.error('Accounting error:', error);
+      alert(`⚠️ Factura añadida sin contabilidad.\nError: ${error.message}`);
+    }
   };
 
   const handleDelete = (id) => {

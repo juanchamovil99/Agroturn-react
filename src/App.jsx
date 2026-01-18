@@ -7,6 +7,7 @@ import ReceivedInvoices from './pages/invoices/ReceivedInvoices';
 import Banking from './pages/banking/Banking';
 import Accounting from './pages/accounting/Accounting';
 import Reports from './pages/reports/Reports';
+import Settings from './pages/settings/Settings';
 import './App.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="banking" element={<Banking />} />
           <Route path="accounting" element={<Accounting />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </Router>

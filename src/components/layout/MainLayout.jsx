@@ -21,6 +21,7 @@ const MainLayout = () => {
     { path: '/banking', label: 'Banca', icon: '🏦' },
     { path: '/accounting', label: 'Contabilidad', icon: '📚' },
     { path: '/reports', label: 'Informes', icon: '📈' },
+    { path: '/settings', label: 'Configuración', icon: '⚙️' },
   ];
 
   const isActive = (path) => {
