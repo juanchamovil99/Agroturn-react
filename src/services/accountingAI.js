@@ -269,10 +269,22 @@ const calculateConfidence = (text, keywords) => {
 export const generateAccountingEntry = (invoice, type = 'expense') => {
   const isExpense = type === 'expense' || type === 'received';
 
-  // Get description from first item or use default
-  const description = invoice.items && invoice.items.length > 0
-    ? invoice.items[0].description
-    : invoice.supplier?.name || invoice.client?.name || '';
+  // Get description from multiple sources for better AI categorization
+  let description = '';
+
+  // Try to get from invoice items (concatenate all non-empty descriptions)
+  if (invoice.items && invoice.items.length > 0) {
+    description = invoice.items
+      .map(item => item.description || '')
+      .filter(d => d.trim())
+      .join(' ');
+  }
+
+  // Fallback to supplier/client name + "servicio" for better categorization
+  if (!description || description.trim() === '') {
+    const entityName = invoice.supplier?.name || invoice.client?.name || '';
+    description = entityName ? `${entityName} servicio` : 'servicio general';
+  }
 
   // Get AI suggestion
   const suggestion = suggestAccountsForInvoice(description, type);

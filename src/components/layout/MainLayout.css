@@ -143,9 +143,28 @@
 
 .nav-label {
   white-space: nowrap;
+  flex: 1;
 }
 
-.sidebar.closed .nav-label {
+.nav-badge {
+  background: #667eea;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  margin-left: auto;
+  min-width: 20px;
+  text-align: center;
+}
+
+.nav-item.active .nav-badge {
+  background: white;
+  color: #667eea;
+}
+
+.sidebar.closed .nav-label,
+.sidebar.closed .nav-badge {
   display: none;
 }
 

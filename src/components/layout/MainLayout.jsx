@@ -6,7 +6,12 @@ import './MainLayout.css';
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
-  const { selectedCompany, companies } = useStore();
+  const { selectedCompany, companies, accountingEntries } = useStore();
+
+  // Count accounting entries for selected company
+  const accountingCount = selectedCompany
+    ? accountingEntries.filter(e => e.companyId === selectedCompany.id).length
+    : 0;
 
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
@@ -62,7 +67,14 @@ const MainLayout = () => {
                 className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
               >
                 <span className="nav-icon">{item.icon}</span>
-                {sidebarOpen && <span className="nav-label">{item.label}</span>}
+                {sidebarOpen && (
+                  <>
+                    <span className="nav-label">{item.label}</span>
+                    {item.path === '/accounting' && accountingCount > 0 && (
+                      <span className="nav-badge">{accountingCount}</span>
+                    )}
+                  </>
+                )}
               </Link>
             ))}
           </nav>
