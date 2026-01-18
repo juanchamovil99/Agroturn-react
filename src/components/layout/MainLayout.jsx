@@ -13,6 +13,7 @@ const MainLayout = () => {
     ? accountingEntries.filter(e => e.companyId === selectedCompany.id).length
     : 0;
 
+  // Menu items configuration
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/companies', label: 'Empresas', icon: '🏢' },
