@@ -55,6 +55,8 @@ const useStore = create(
       deleteIssuedInvoice: (id) =>
         set((state) => ({
           issuedInvoices: state.issuedInvoices.filter((inv) => inv.id !== id),
+          // Also delete associated accounting entries
+          accountingEntries: state.accountingEntries.filter((entry) => entry.invoiceId !== id),
         })),
 
       // Actions - Received Invoices
@@ -73,6 +75,8 @@ const useStore = create(
       deleteReceivedInvoice: (id) =>
         set((state) => ({
           receivedInvoices: state.receivedInvoices.filter((inv) => inv.id !== id),
+          // Also delete associated accounting entries
+          accountingEntries: state.accountingEntries.filter((entry) => entry.invoiceId !== id),
         })),
 
       // Actions - Banking
@@ -108,6 +112,16 @@ const useStore = create(
       getReceivedInvoicesByCompany: (companyId) => {
         const state = get();
         return state.receivedInvoices.filter((inv) => inv.companyId === companyId);
+      },
+
+      getAccountingEntriesByCompany: (companyId) => {
+        const state = get();
+        return state.accountingEntries.filter((entry) => entry.companyId === companyId);
+      },
+
+      getAccountingEntryByInvoice: (invoiceId) => {
+        const state = get();
+        return state.accountingEntries.find((entry) => entry.invoiceId === invoiceId);
       },
     }),
     {

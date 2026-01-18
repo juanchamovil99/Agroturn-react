@@ -4,6 +4,7 @@ import useStore from '../../store/useStore';
 import InvoiceForm from '../../components/invoices/InvoiceForm';
 import InvoicePreview from '../../components/invoices/InvoicePreview';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { generateAccountingEntry } from '../../services/accountingAI';
 import './IssuedInvoices.css';
 
 const IssuedInvoices = () => {
@@ -13,6 +14,7 @@ const IssuedInvoices = () => {
     addIssuedInvoice,
     updateIssuedInvoice,
     deleteIssuedInvoice,
+    addAccountingEntry,
   } = useStore();
 
   const [showForm, setShowForm] = useState(false);
@@ -130,14 +132,33 @@ const IssuedInvoices = () => {
           type="issued"
           onClose={handleCloseForm}
           onSave={(invoice) => {
+            const fullInvoice = {
+              ...invoice,
+              companyId: selectedCompany.id,
+              createdAt: new Date().toISOString(),
+            };
+
             if (editingInvoice) {
               updateIssuedInvoice(editingInvoice.id, invoice);
             } else {
-              addIssuedInvoice({
-                ...invoice,
-                companyId: selectedCompany.id,
-                createdAt: new Date().toISOString(),
-              });
+              addIssuedInvoice(fullInvoice);
+
+              // Generate accounting entry automatically for new invoices
+              const { entry, suggestion } = generateAccountingEntry(fullInvoice, 'income');
+              entry.companyId = selectedCompany.id;
+              addAccountingEntry(entry);
+
+              // Show notification about accounting
+              setTimeout(() => {
+                alert(
+                  `✅ Factura Creada\n\n` +
+                  `🤖 Contabilización Automática:\n` +
+                  `Categoría: ${suggestion.categoryName}\n` +
+                  `Debe (${suggestion.debitAccount}): ${suggestion.debitAccountName}\n` +
+                  `Haber (${suggestion.creditAccount}): ${suggestion.creditAccountName}\n\n` +
+                  `El asiento contable se ha generado automáticamente.`
+                );
+              }, 300);
             }
             handleCloseForm();
           }}

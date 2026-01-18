@@ -24,6 +24,198 @@
   line-height: 1.6;
 }
 
+/* Accounting Summary */
+.accounting-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-item {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  text-align: center;
+}
+
+.summary-label {
+  display: block;
+  color: #718096;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.summary-value {
+  display: block;
+  color: #2d3748;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Entries Container */
+.entries-container {
+  margin-bottom: 2rem;
+}
+
+.entries-container > h2 {
+  margin: 0 0 1.5rem 0;
+  color: #2d3748;
+}
+
+.entry-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border-left: 4px solid #667eea;
+}
+
+.entry-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.entry-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.entry-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.entry-date {
+  color: #718096;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.entry-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.entry-type.income {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.entry-type.expense {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.entry-category {
+  color: #667eea;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Entry Table */
+.entry-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.entry-table thead {
+  background: #f7fafc;
+}
+
+.entry-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #4a5568;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.entry-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.account-code {
+  font-weight: 700;
+  color: #667eea;
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+.line-description {
+  display: flex;
+  flex-direction: column;
+}
+
+.account-name {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.line-detail {
+  font-size: 0.875rem;
+  color: #718096;
+  margin-top: 0.25rem;
+}
+
+.debit {
+  color: #f56565;
+  font-weight: 600;
+}
+
+.credit {
+  color: #48bb78;
+  font-weight: 600;
+}
+
+.totals-row {
+  background: #f7fafc;
+  font-weight: 700;
+}
+
+.totals-row td {
+  border-top: 3px solid #667eea;
+  border-bottom: none;
+  padding: 1rem 0.75rem;
+}
+
+/* Empty State */
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 2rem;
+}
+
+.empty-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h2 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #718096;
+  margin-bottom: 1.5rem;
+}
+
 .accounting-sections {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

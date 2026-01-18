@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import useStore from '../../store/useStore';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { extractInvoiceDataFromPDF, isPDFScanned } from '../../utils/pdfParser';
+import { generateAccountingEntry } from '../../services/accountingAI';
 import './IssuedInvoices.css';
 
 const ReceivedInvoices = () => {
@@ -12,6 +13,7 @@ const ReceivedInvoices = () => {
     addReceivedInvoice,
     updateReceivedInvoice,
     deleteReceivedInvoice,
+    addAccountingEntry,
   } = useStore();
 
   const [showUpload, setShowUpload] = useState(false);
@@ -83,7 +85,12 @@ const ReceivedInvoices = () => {
 
       addReceivedInvoice(newInvoice);
 
-      // Show success message with extracted data
+      // Generate accounting entry automatically
+      const { entry, suggestion } = generateAccountingEntry(newInvoice, 'expense');
+      entry.companyId = selectedCompany.id; // Add company ID
+      addAccountingEntry(entry);
+
+      // Show success message with extracted data AND accounting
       alert(
         '✅ Factura Extraída Exitosamente\n\n' +
         `Número: ${newInvoice.number}\n` +
@@ -93,6 +100,10 @@ const ReceivedInvoices = () => {
         `Base: ${formatCurrency(newInvoice.subtotal)}\n` +
         `IVA: ${formatCurrency(newInvoice.vat)}\n` +
         `Total: ${formatCurrency(newInvoice.total)}\n\n` +
+        `🤖 Contabilización Automática:\n` +
+        `Categoría: ${suggestion.categoryName}\n` +
+        `Debe (${suggestion.debitAccount}): ${suggestion.debitAccountName}\n` +
+        `Haber (${suggestion.creditAccount}): ${suggestion.creditAccountName}\n\n` +
         'Puedes editar los datos si es necesario.'
       );
 
@@ -113,13 +124,16 @@ const ReceivedInvoices = () => {
   };
 
   const handleManualAdd = () => {
+    const supplierName = prompt('Nombre del proveedor:') || '';
+    const description = prompt('Descripción/Concepto:') || supplierName;
+
     const newInvoice = {
       id: `rec_${Date.now()}`,
       companyId: selectedCompany.id,
       number: prompt('Número de factura:') || '',
       date: new Date().toISOString().split('T')[0],
       supplier: {
-        name: prompt('Nombre del proveedor:') || '',
+        name: supplierName,
         nif: prompt('NIF del proveedor:') || '',
       },
       subtotal: parseFloat(prompt('Base imponible:') || '0'),
@@ -127,10 +141,25 @@ const ReceivedInvoices = () => {
       total: 0,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      items: [{ description }], // For AI categorization
     };
 
     newInvoice.total = newInvoice.subtotal + newInvoice.vat;
     addReceivedInvoice(newInvoice);
+
+    // Generate accounting entry automatically
+    const { entry, suggestion } = generateAccountingEntry(newInvoice, 'expense');
+    entry.companyId = selectedCompany.id;
+    addAccountingEntry(entry);
+
+    // Show accounting categorization
+    alert(
+      `✅ Factura Añadida\n\n` +
+      `🤖 Contabilización Automática:\n` +
+      `Categoría: ${suggestion.categoryName}\n` +
+      `Confianza: ${(suggestion.confidence * 100).toFixed(0)}%\n\n` +
+      `Asiento generado automáticamente.`
+    );
   };
 
   const handleDelete = (id) => {
