@@ -22,6 +22,7 @@ function App() {
           <Route path="banking" element={<Banking />} />
           <Route path="accounting" element={<Accounting />} />
           <Route path="reports" element={<Reports />} />
+          {/* Settings configuration page */}
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
